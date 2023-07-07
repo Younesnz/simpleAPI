@@ -29,13 +29,18 @@ const UserSchema = new Schema({
 
 const User = mongoose.model("User", UserSchema);
 
-const validateUser = () => {
-  const joiSchema = {
-    username: Joi.string().min(5).max(50).required(),
-    password: Joi.string().required(),
-    age: Joi.number().min(0).max(200),
-    isAdmin: Joi.boolean().required(),
-  };
+const validateUser = (user, isRequired = true) => {
+  let joiSchema = Joi.object({
+    username: Joi.string().min(5).max(50),
+    password: Joi.string(),
+    age: Joi.number().integer().min(0).max(200),
+    isAdmin: Joi.boolean(),
+  });
+  if (isRequired)
+    joiSchema = joiSchema.fork(["username", "password", "isAdmin"], (field) =>
+      field.required()
+    );
+  return joiSchema.validate(user);
 };
 
 exports.User = User;

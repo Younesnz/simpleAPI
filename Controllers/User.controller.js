@@ -7,7 +7,7 @@ const { User, validate } = require("../Models/User.model");
 module.exports = {
   getAllUsers: async (req, res, next) => {
     try {
-      const result = await User.find({}, { password: 0, _v: 0 }).sort(
+      const result = await User.find({}, { password: 0, __v: 0 }).sort(
         "username"
       );
       res.send(result);
@@ -23,15 +23,16 @@ module.exports = {
       const result = await user.save();
       res.send(result);
     } catch (err) {
-      debug(`Error in createNewUser: ${err.message}`);
-      if (error.name === "ValidationError")
-        res.status(422).send("unprocessable entity");
+      debug(`Error in createNewUser: ${err}`);
+      if (err.code === 11000)
+        return res.status(400).send("username already exist");
+      return res.status(422).send(err);
     }
   },
   getUserById: async (req, res, next) => {
     const id = req.params.id;
     try {
-      const user = await User.findById(id);
+      const user = await User.findById(id, { password: 0, __v: 0 });
       if (!user) return res.status(404).send("user does not exist.");
       res.send(user);
     } catch (err) {
@@ -42,6 +43,9 @@ module.exports = {
   },
   updateUser: async (req, res, next) => {
     try {
+      const { error } = validate(req.body, false);
+      if (error) return res.status(400).send(error.details[0].message);
+
       const id = req.params.id;
       const updates = req.body;
       const options = { new: true };
@@ -51,8 +55,12 @@ module.exports = {
       res.send(result);
     } catch (err) {
       debug(`Error in updateUser: ${err.message}`);
+      if (err.code === 11000)
+        return res.status(400).send("username already exist");
       if (err instanceof mongoose.CastError)
         return res.status(400).send("invalid user id");
+
+      return res.status(500).send("something went wrong.");
     }
   },
 
@@ -66,6 +74,7 @@ module.exports = {
       debug(`Error in deleteUser: ${err.message}`);
       if (err instanceof mongoose.CastError)
         return res.status(400).send("invalid user id");
+      return res.status(500).send("something went wrong.");
     }
   },
 };
