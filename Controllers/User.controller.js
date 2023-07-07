@@ -3,7 +3,6 @@ const mongoose = require("mongoose");
 const debug = require("debug")("app:UserController");
 
 const { User, validate } = require("../Models/User.model");
-const { response } = require("express");
 
 module.exports = {
   getAllUsers: async (req, res, next) => {
